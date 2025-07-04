@@ -22,34 +22,40 @@ import quairkit as qkit
 import torch
 from quairkit import Hamiltonian, State
 from quairkit.database import zero_state
-from quairkit.qinfo import block_enc_herm, herm_transform, nkron
+from quairkit.qinfo import nkron
 
-module_path = os.path.abspath(os.path.join('..'))
+module_path = os.path.abspath(os.path.join(".."))
 if module_path not in sys.path:
     sys.path.append(module_path)
 
 from qsp import *
 
-from .sampling import sampling
+from .sampling import algorithm4
 
-__all__ = ['E_eval', 'get_qpp_angle']
+__all__ = ["E_eval", "get_qpp_angle"]
 
-def line_mapping(start: Tuple[int, int], end: Tuple[int, int]) -> Callable[[np.ndarray], np.ndarray]:
-    r"""Create a linear mapping function from start to end.
-    """
+
+def line_mapping(
+    start: Tuple[int, int], end: Tuple[int, int]
+) -> Callable[[np.ndarray], np.ndarray]:
+    r"""Create a linear mapping function from start to end."""
     x1, y1 = start
     x2, y2 = end
     if x1 >= x2:
         raise ValueError(f"x1 must be less than x2, but got {x1} > {x2}")
-    
+
     m = (y2 - y1) / (x2 - x1)
     b = y1 - m * x1
+
     def map_to_line(x_values: np.ndarray) -> np.ndarray:
         return m * x_values + b
 
     return map_to_line
 
-def target_func_Q(F: Callable[[np.ndarray], np.ndarray], deg) -> Callable[[np.ndarray], np.ndarray]:
+
+def target_func_Q(
+    F: Callable[[np.ndarray], np.ndarray], deg: int
+) -> Callable[[np.ndarray], np.ndarray]:
     r"""
     Generates and returns a new function based on the input function F and degree modifier.
 
@@ -58,43 +64,52 @@ def target_func_Q(F: Callable[[np.ndarray], np.ndarray], deg) -> Callable[[np.nd
         deg: A degree modifier used in computing the phase part of the function.
 
     """
+
     def f(x: np.ndarray) -> np.ndarray:
-        amplitude = np.sqrt(1 - (F(x)**2))
+        amplitude = np.sqrt(1 - (F(x) ** 2))
         phase = np.exp(1j * x * deg / 2 * 0.99)
-        return  amplitude * phase
+        return amplitude * phase
+
     return f
 
-def get_qpp_angle(guess_lambda: float, tau: int, deg: int, only_P: bool = False, learn: bool = False) -> Union[Laurent, Tuple[List[float], List[float]]]:
+
+def get_qpp_angle(
+    guess_lambda: float, tau: int, deg: int, learn: bool = False
+) -> Union[Laurent, Tuple[List[float], List[float]]]:
     r"""Generate the QPP angles for the given function.
-    
+
     Args:
         guess_lambda: lambda parameter for the function.
         tau: time parameter for the function.
         deg: degree of the polynomial approximation.
 
     """
+    lambda_name = round(guess_lambda, 8)
     try:
-        file = f'data/lam{guess_lambda}_tau{tau}_deg{deg}'
-        str_theta = f'{file}_theta.npy'
-        str_phi = f'{file}_phi.npy'
-        str_P = f'{file}_P.npy'
-        if only_P:
-            P_coef = np.load(file=str_P)
-            P = Laurent(P_coef)
-            return P
-        else:
-            list_theta = np.load(file=str_theta)
-            list_phi = np.load(file=str_phi)
-            return list_theta, list_phi
+        file = f"data/lam{lambda_name}_tau{tau}_deg{deg}"
+        str_theta = f"{file}_theta.npy"
+        str_phi = f"{file}_phi.npy"
+
+        list_theta = np.load(file=str_theta)
+        list_phi = np.load(file=str_phi)
+        return list_theta, list_phi
+
     except Exception:
         start, end = -1, -1 + np.pi
 
         def f(x):
             alpha = 0.85
-            return np.where(x <= guess_lambda,
-                            np.exp(tau * (x - guess_lambda)) * alpha, -1 * np.exp(tau * alpha * (-x + guess_lambda) / (1 - alpha)) * (1 - alpha) + 1)
+            return np.where(
+                x <= guess_lambda,
+                np.exp(tau * (x - guess_lambda)) * alpha,
+                -1
+                * np.exp(tau * alpha * (-x + guess_lambda) / (1 - alpha))
+                * (1 - alpha)
+                + 1,
+            )
 
         left_y, right_y = f(start), f(end)
+
         def f_left(x):
             return left_y + right_y - f((x + 1) % np.pi - 1)
 
@@ -116,10 +131,6 @@ def get_qpp_angle(guess_lambda: float, tau: int, deg: int, only_P: bool = False,
         F = to_smooth(target_func, [start, end], transition_width=0.1)
         P = laurent_generator(F, deg)
         P = P * (0.999999 / P.max_norm)
-        
-        if only_P:
-            np.save(f'data/lam{guess_lambda}_tau{tau}_deg{deg}_P.npy', P_coef)
-            return P
 
         F_Q = target_func_Q(P, deg=deg)
         Q = laurent_generator(F_Q, deg)
@@ -128,61 +139,70 @@ def get_qpp_angle(guess_lambda: float, tau: int, deg: int, only_P: bool = False,
         list_theta, list_phi = qpp_angle_approximator(P, Q)
 
         if learn:
-            qkit.set_device('cuda' if torch.cuda.is_available() else 'cpu')
+            qkit.set_device("cuda" if torch.cuda.is_available() else "cpu")
+
             def weight_func(x):
                 return 1 + np.exp(-np.log(tau) * np.abs(guess_lambda - x))
 
-            list_theta, list_phi = qpp_angle_learner(target_func, list_theta, list_phi, num_sample=1000, 
-                                                    start=-1, end=1 + 0.2, key_points=[guess_lambda], is_real=True, weight=weight_func)
-            qkit.set_device('cpu')
+            list_theta, list_phi = qpp_angle_learner(
+                target_func,
+                list_theta,
+                list_phi,
+                num_sample=1000,
+                start=-1,
+                end=1 + 0.2,
+                key_points=[guess_lambda],
+                is_real=True,
+                weight=weight_func,
+            )
+            qkit.set_device("cpu")
 
-        np.save(f'data/lam{guess_lambda}_tau{tau}_deg{deg}_theta.npy', list_theta)
-        np.save(f'data/lam{guess_lambda}_tau{tau}_deg{deg}_phi.npy', list_phi)
+        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_theta.npy", list_theta)
+        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_phi.npy", list_phi)
         return list_theta, list_phi
 
 
-def E_eval(H: Hamiltonian, guess_lambda: float, tau: int, deg: int, phi: State, only_P: bool = False, b_tau: float = 1, learn: bool = False) -> float:
+def E_eval(
+    H: Hamiltonian,
+    guess_lambda: float,
+    tau: int,
+    deg: int,
+    phi: State,
+    B: float = 1,
+    learn: bool = False,
+) -> float:
     r"""Evaluate the loss function E.
-    
+
     Args:
         H: Hamiltonian operator.
         guess_lambda: lambda parameter for the function.
         tau: time parameter for the function.
         deg: degree of the polynomial approximation.
         phi: initial state.
-    
+
     """
+    lambda_name = round(guess_lambda, 8)
     try:
-        file = f'data/lam{guess_lambda}_tau{tau}_deg{deg}'
-        str_theta = f'{file}_theta.npy'
-        str_phi = f'{file}_phi.npy'
-        str_P = f'{file}_P.npy'
-        if only_P:
-            P_coef = np.load(file=str_P)
-            P = Laurent(P_coef)
-        else:
-            list_theta = np.load(file=str_theta)
-            list_phi = np.load(file=str_phi)
+        file = f"data/lam{lambda_name}_tau{tau}_deg{deg}"
+        str_theta = f"{file}_theta.npy"
+        str_phi = f"{file}_phi.npy"
+
+        list_theta = np.load(file=str_theta)
+        list_phi = np.load(file=str_phi)
+
     except Exception:
-        if only_P:
-            P = get_qpp_angle(guess_lambda, tau, deg, only_P=only_P)
-            P_coef = P.coef
-        else:
-            list_theta, list_phi = get_qpp_angle(guess_lambda, tau, deg, only_P=only_P, learn=learn)
+        list_theta, list_phi = get_qpp_angle(guess_lambda, tau, deg, learn=learn)
 
     num_qubits = H.n_qubits
     H_matrix = H.matrix
     input_state = nkron(zero_state(1), phi)
 
-    if only_P:
-        H_P = herm_transform(P, -H_matrix)
-        H_P_block = block_enc_herm(H_P, 1)
-        output_state = input_state.evolve(H_P_block, list(range(num_qubits + 1)))
-    else:
-        U = torch.matrix_exp(-1j * H_matrix)
-        cir = qpp_cir(list_theta, list_phi, U)
-        output_state = cir(input_state)
-        del cir
-    E, sample_plus_1, sample_minus_1, shots_b0_0 = sampling(output_state=output_state, hamiltonian=H, num_qubits=num_qubits, tau=tau, b_tau=b_tau)
-    return E, sample_plus_1, sample_minus_1, shots_b0_0
+    U = torch.matrix_exp(-1j * H_matrix)
+    cir = qpp_cir(list_theta, list_phi, U)
+    output_state = cir(input_state)
+    del cir
 
+    E, sample_plus_1, sample_minus_1, shots_b0_0 = algorithm4(
+        output_state=output_state, hamiltonian=H, num_qubits=num_qubits, tau=tau, B=B
+    )
+    return E, sample_plus_1, sample_minus_1, shots_b0_0

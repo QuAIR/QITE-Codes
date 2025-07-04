@@ -1,15 +1,16 @@
-# QITE-Codes
+# QITE-codes Documentation
 
-Source code for the paper *Quantum Imaginary-Time Evolution with Polynomial Resources in Time*.
+Source code for the paper [Quantum Imaginary-Time Evolution with Polynomial Resources in Time](http://arxiv.org/abs/2507.00908).
 
-QITE is a novel quantum algorithm framework designed to simulate normalized imaginary-time evolution with rigorous performance guarantees. Unlike conventional methods that suffer from exponentially growing classical resources or deteriorating success probabilities in long evolution times, QITE introduces an adaptive normalization scheme that ensures stable and highly probable state preparation even for large imaginary-time durations.
-
-By leveraging polynomially-scaling quantum resources in imaginary evolution time, QITE achieves high precision in approximating ground state of quantum many-body systems. It utilizes only a single ancilla qubit and a moderate number of elementary quantum gates, making it particularly suitable for near-term quantum devices.
+Preparing the normalized imaginary-time evolution state (ITE state) is a useful tool for problems in quantum many-body system, while current methods that suffer from exponentially growing classical resources or deteriorating success probabilities in long evolution time.
+This repository gives the simulation code for a quantum algorithm that introduces a normalization scheme that ensures state preparation for large imaginary-time durations with stable success probability, and a quantum algorithm using the idea of ITE to solve ground-state-related problems.
 
 | Visualization / Protocols in the paper      | Location in this repository                                           | Extra hardware requirement |
 |--------------------|------------------------------------------------------------------|:-----------------:|
-| [Tutorial for the ITE circuit](./qite.ipynb)           | `tutorial.ipynb`                              | \ |
-| [Figures in the paper](./qite.ipynb)      | `qite.ipynb`                              | GPU for efficient simulation |
+| [Tutorial for the ITE circuit](./code/tutorial.ipynb)           | `tutorial.ipynb`                              | \ |
+| [Figure 1](./code/normalization.ipynb)           | `./code/normalization.ipynb`                              | \ |
+| [Figure 2(a)](./code/long%20evolution.ipynb)           | `./code/long evolution.ipynb`                              | \ |
+| [Figure 2(b, c)](./code/ground%20state.ipynb)           | `./code/ground state.ipynb`                              | \ |
 
 ## Repository Structure
 
@@ -59,4 +60,4 @@ It is recommended to run these files on a server with high performance. Below ar
 - CPU: AMD EPYC 9654 96-Core Processor
 - GPU: (0) NVIDIA GeForce RTX 4090
 
-These settings ensure compatibility and optimal performance when running the qite codes.
+These settings ensure compatibility and optimal performance when running the codes.

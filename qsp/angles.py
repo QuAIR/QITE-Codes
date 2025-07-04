@@ -523,7 +523,6 @@ def train_Q(deg, P, Q, max_epochs=500) -> Laurent:
         mode='min',
         factor=0.5,
         patience=10,
-        verbose=False
     )
 
     # Step 3: Training loop

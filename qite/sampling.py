@@ -14,9 +14,8 @@
 # limitations under the License.
 
 import math
-import time
-from typing import Tuple
 from collections import defaultdict
+from typing import Tuple
 
 import numpy as np
 import quairkit as qkit
@@ -24,25 +23,23 @@ import torch
 from quairkit import Hamiltonian, State, to_state
 from quairkit.database import *
 from quairkit.qinfo import *
-
 from scipy.stats import norm
 
-__all__ = ['sampling', 'binomial_Proportion_Confidence_Interval']
+__all__ = ["algorithm4", "confidence_interval"]
 
 
 def construct_sigma(pauli_string: str) -> torch.Tensor:
-    r"""Construct the Pauli matrix given its string
-    """
+    r"""Construct the Pauli matrix given its string"""
     pauli_string = pauli_string.upper()
     list_t = []
     for char in pauli_string:
-        if char == 'X':
+        if char == "X":
             list_t.append(x())
-        elif char == 'Y':
+        elif char == "Y":
             list_t.append(y())
-        elif char == 'Z':
+        elif char == "Z":
             list_t.append(z())
-        elif char == 'I':
+        elif char == "I":
             list_t.append(eye())
         else:
             raise ValueError(f"Invalid Pauli character: {char}")
@@ -51,22 +48,22 @@ def construct_sigma(pauli_string: str) -> torch.Tensor:
 
 def construct_T(pauli_string: str) -> torch.Tensor:
     r"""Construct a similar matrix T
-    
+
     Args:
         pauli_string: a string representing an n-qubit Pauli \sigma
-        
+
     Returns:
         T such that T \sigma T^\dagger \equiv Z
-        
+
     """
     pauli_string = pauli_string.upper()
     list_t = []
     for char in pauli_string:
-        if char == 'X':
+        if char == "X":
             list_t.append(h())
-        elif char == 'Y':
+        elif char == "Y":
             list_t.append(h() @ sdg())
-        elif char in ['Z', 'I']:
+        elif char in ["Z", "I"]:
             list_t.append(eye(2))
         else:
             raise ValueError(f"Invalid Pauli character: {char}")
@@ -82,7 +79,7 @@ def safe_prob_sample(prob_distribution, shots, max_chunk_size=1e9):
         shots: total number of samples
         max_chunk_size: maximum number of shots per batch
 
-    Returns: 
+    Returns:
         merged sample count dictionary {index: count}
 
     """
@@ -106,30 +103,33 @@ def safe_prob_sample(prob_distribution, shots, max_chunk_size=1e9):
 
     return dict(result)
 
-def sample_x(output_state, hamiltonian: Hamiltonian, 
-             num_qubits: int, pauli_coef: np.ndarray, l: int, shots: int) -> float:
-    r"""Step 11-14 in Algorithm 3, where the return value is the sum of all X_i in this for loop
-    """
+
+def sample_x(
+    output_state,
+    hamiltonian: Hamiltonian,
+    num_qubits: int,
+    pauli_coef: np.ndarray,
+    l: int,
+    shots: int,
+) -> float:
+    r"""Step 11-14 in Algorithm 3, where the return value is the sum of all X_i in this for loop"""
     coef = pauli_coef[l]
     pauli_str = hamiltonian.pauli_words[l]
     pauli_sum = np.abs(pauli_coef).sum()
-    
+
     T, sigma = construct_T(pauli_str), construct_sigma(pauli_str)
     obs = T @ sigma @ dagger(T)
 
-    # print(T)
-    # print(output_state)
     psi = output_state.evolve(T, list(range(1, num_qubits + 1)))
-    # print(psi)
     prob_distribution = psi.density_matrix.diag().real
-    # print('prob_distribution', prob_distribution)
-    qkit.set_device('cuda' if torch.cuda.is_available() else 'cpu')
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    qkit.set_device("cuda" if torch.cuda.is_available() else "cpu")
+    device = qkit.get_device()
+
     prob_distribution = prob_distribution.to(device=device)
-    # start_time = time.time()
     sample_result = safe_prob_sample(prob_distribution, shots=shots)
     # print('sampling time', time.time() - start_time)
-    qkit.set_device('cpu')
+    qkit.set_device("cpu")
 
     sum_x = 0
 
@@ -152,44 +152,60 @@ def sample_x(output_state, hamiltonian: Hamiltonian,
             else:
                 raise ValueError("val is not ±1!")
             num_b0_0 += num_sample
-        
+
         x_val = (1 - b0) * coef / np.abs(coef) * pauli_sum * int(obs[b, b])
         sum_x += num_sample * x_val
     return sum_x, count_plus_1, count_minus_1, num_b0_0
 
-def sampling(output_state: State, hamiltonian: Hamiltonian, num_qubits: int, tau: float, b_tau: float):
 
+def algorithm4(
+    output_state: State, hamiltonian: Hamiltonian, num_qubits: int, tau: float, B: float
+):
     pauli_coef = hamiltonian.coefficients
-    Lambda = np.abs(pauli_coef).max()
-    total_shots = min(1e9, int(2 * max(Lambda ** 2, 1) * tau ** 3 * (b_tau ** (-2))))
     
+    # Lambda = np.abs(pauli_coef).max()
+    # total_shots = min(int(1e9), int(2 * max(Lambda ** 2, 1) * tau ** 3 * (B ** (-2))))
+    total_shots = int(1e9)
+
     pauli_weight = np.abs(pauli_coef) / np.abs(pauli_coef).sum()
     list_shots = np.random.multinomial(total_shots, pauli_weight)
 
-    measure_sample = [sample_x(output_state=output_state, hamiltonian=hamiltonian, 
-                             num_qubits=num_qubits, pauli_coef=pauli_coef, l=l, shots=shots) for l, shots in enumerate(list_shots)]
-    measure_E_total = sum([x[0] for x in measure_sample])
-    sample_plus_1 = sum([x[1] for x in measure_sample])
-    sample_minus_1 = sum([x[2] for x in measure_sample])
-    shots_b0_0 = sum([x[3] for x in measure_sample])
+    measure_sample = [
+        sample_x(
+            output_state=output_state,
+            hamiltonian=hamiltonian,
+            num_qubits=num_qubits,
+            pauli_coef=pauli_coef,
+            l=l,
+            shots=shots,
+        )
+        for l, shots in enumerate(list_shots)
+    ]
+    measure_E_total = sum(x[0] for x in measure_sample)
+    sample_plus_1 = sum(x[1] for x in measure_sample)
+    sample_minus_1 = sum(x[2] for x in measure_sample)
+    shots_b0_0 = sum(x[3] for x in measure_sample)
 
     measure_E = measure_E_total / total_shots
 
     return measure_E, sample_plus_1, sample_minus_1, shots_b0_0
 
-def binomial_Proportion_Confidence_Interval(count_plus_1: int, count_minus_1: int, confidence=0.95, pauli_sum=1) -> Tuple[float, float]:
+
+def confidence_interval(
+    count_plus_1: int, count_minus_1: int, confidence=0.95, pauli_sum=1
+) -> Tuple[float, float]:
     r"""
     Compute mean value and error bar from counts of +1 and -1 outcomes.
 
     Args:
-        count_plus_1 (int): Number of times +1 was observed
-        count_minus_1 (int): Number of times -1 was observed
-        confidence (float): Confidence level (e.g., 0.95 for 95%)
-        pauli_sum (float): Normalization factor
+        count_plus_1: Number of times +1 was observed
+        count_minus_1: Number of times -1 was observed
+        confidence: Confidence level (e.g., 0.95 for 95%)
+        pauli_sum: Normalization factor
 
     Returns:
-        mean_value (float): Estimated expectation value: E[X] = (count_plus_1 - count_minus_1) / total
-        error (float): Symmetric error bar around the mean based on normal approximation
+        mean_value: Estimated expectation value: E[X] = (count_plus_1 - count_minus_1) / total
+        error: Symmetric error bar around the mean based on normal approximation
     """
 
     total = count_plus_1 + count_minus_1

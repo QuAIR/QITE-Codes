@@ -63,12 +63,9 @@ def qpp_cir(
     list_theta, list_phi = np.squeeze(list_theta), np.squeeze(list_phi)
 
     assert len(list_theta) == len(list_phi)
-    n = int(log2(U.shape[-1])) if len(U.shape) > 1 else 0
     L = len(list_theta) - 1
 
-    cir = Circuit(n + 1)
-    all_register = list(range(n + 1))
-
+    cir = Circuit(2, [2, U.shape[-1]]) if len(U.shape) > 1 else Circuit(1)
     for i in range(L):
         cir.rz(0, param=list_phi[i])
         cir.ry(0, param=list_theta[i])
@@ -77,11 +74,9 @@ def qpp_cir(
         if len(U.shape) == 1:
             cir.rz(0, param=U)
         elif i % 2 == 0:
-            cir.control_oracle(U, all_register, latex_name=r"U")
+            cir.oracle(U, [0, 1], latex_name=r"U", control_idx=1)
         else:
-            cir.x(0)
-            cir.control_oracle(dagger(U), all_register, latex_name=r"U^\dagger")
-            cir.x(0)
+            cir.oracle(dagger(U), [0, 1], latex_name=r"U^\dagger", control_idx=0)
     cir.rz(0, param=list_phi[-1])
     cir.ry(0, param=list_theta[-1])
 

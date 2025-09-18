@@ -105,7 +105,7 @@ def safe_prob_sample(prob_distribution, shots, max_chunk_size=1e9):
 
 
 def sample_x(
-    output_state,
+    output_state: State,
     hamiltonian: Hamiltonian,
     num_qubits: int,
     pauli_coef: np.ndarray,
@@ -120,7 +120,7 @@ def sample_x(
     T, sigma = construct_T(pauli_str), construct_sigma(pauli_str)
     obs = T @ sigma @ dagger(T)
 
-    psi = output_state.evolve(T, list(range(1, num_qubits + 1)))
+    psi = output_state.evolve(T, 1)
     prob_distribution = psi.density_matrix.diag().real
 
     qkit.set_device("cuda" if torch.cuda.is_available() else "cpu")
@@ -207,7 +207,6 @@ def confidence_interval(
         mean_value: Estimated expectation value: E[X] = (count_plus_1 - count_minus_1) / total
         error: Symmetric error bar around the mean based on normal approximation
     """
-
     total = count_plus_1 + count_minus_1
     if total == 0:
         return np.nan, np.nan

@@ -16,11 +16,11 @@
 import torch
 from quairkit import Hamiltonian
 
-__all__ = ["normalized_heisenberg_hamiltonian"]
+__all__ = ["normalize", "heisenberg", "afm_heisenberg"]
 
 
-def heisenberg_hamiltonian(
-    n: int = 6,
+def heisenberg(
+    n: int,
     hz: float = 1,
     hx: float = 0,
     hy: float = 0,
@@ -51,29 +51,40 @@ def heisenberg_hamiltonian(
     return Hamiltonian(pauli_terms)
 
 
-def normalized_heisenberg_hamiltonian(
-    n: int = 6,
-    factor: float = 1,
-    hz: float = 1,
-    hx: float = 0,
-    hy: float = 0,
-    hxx: float = 1,
-    hyy: float = 1,
-    hzz: float = 1,
-) -> Hamiltonian:
-    r"""Prepare a heisenberg hamiltonian which eigenvalues fall within [-1, 1]
-
+def afm_heisenberg(n: int) -> Hamiltonian:
+    r"""Prepare an antiferromagnetic heisenberg hamiltonian for a n-qubit homogeneous chain
+    
     Args:
         n: number of qubits
+        
+    Note:
+        Equation 1 in *Quantum Simulation of Antiferromagnetic Heisenberg Chain with Gate-Defined Quantum Dots*
+    
+    """
+    pauli_terms = []
+    for i in range(n - 1):
+        pauli_terms.extend(
+            (
+                [1 / n, f"X{i}, X{i + 1}"],
+                [1 / n, f"Y{i}, Y{i + 1}"],
+                [1 / n, f"Z{i}, Z{i + 1}"],
+            )
+        )
+    pauli_terms.append([-(n - 1) / n, f"I{n - 1}"])
+    return Hamiltonian(pauli_terms)
+
+
+def normalize(H: Hamiltonian, factor: float) -> Hamiltonian:
+    r"""Normalize a Hamiltonian which eigenvalues will be divided by factor
+
+    Args:
+        H: a given Hamiltonian
         factor: inverse normalized factor, should be larger than or equal to 1
 
     """
     assert factor >= 1
 
-    H_init = heisenberg_hamiltonian(n, hz, hx, hy, hxx, hyy, hzz)
-
-    max_abs_eigen = (torch.linalg.eigvalsh(H_init.matrix)).abs().max() * factor
     new_pauli_string = [
-        [coef / max_abs_eigen, pauli_str] for coef, pauli_str in H_init.pauli_str
+        [coef / factor, pauli_str] for coef, pauli_str in H.pauli_str
     ]
     return Hamiltonian(new_pauli_string)

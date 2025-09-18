@@ -192,12 +192,12 @@ def qpp_angle_learner(F: Union[Laurent, Callable[[np.ndarray], np.ndarray]],
     cir = _construct_learnable_circuit(list_theta, list_phi, list_x)
     
     def loss_fcn(circuit: Circuit) -> torch.Tensor:
-        actual_output = circuit.unitary_matrix()[:, 0, 0]
+        actual_output = circuit.matrix[:, 0, 0]
         expected_output = _align_y(list_y, actual_output)
         return ((torch.abs(actual_output - expected_output) ** 2) * list_w).mean()
     
     def test_fcn(circuit: Circuit) -> float:
-        actual_output = circuit.unitary_matrix()[:, 0, 0]
+        actual_output = circuit.matrix[:, 0, 0]
         expected_output = _align_y(list_y, actual_output)
         return torch.abs((actual_output - expected_output)).max().item()
     
@@ -397,7 +397,7 @@ def matrix_generation(list_theta: List[float], list_phi: List[float], x: float, 
     cir.rz(0, param=list_phi[-1])
     cir.ry(0, param=list_theta[-1])
     
-    return cir.unitary_matrix().numpy() * alpha
+    return cir.matrix.numpy() * alpha
 
 
 def yz_decomposition(U: np.ndarray) -> Tuple[complex, float, float]:
@@ -419,30 +419,19 @@ def yz_decomposition(U: np.ndarray) -> Tuple[complex, float, float]:
         return torch.norm(phase * (rz(omega) @ ry(theta) @ rz(phi)) - U)
 
     NUM_ITR = 500
-    loss_list, time_list = [], []
 
     opt = torch.optim.Adam(lr=0.1, params=[param]) # cir is a Circuit type
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, 'min', factor=0.5) # activate scheduler
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, 'min', factor=0.5)
 
-    for itr in range(NUM_ITR):
-        start_time = time.time()
+    for _ in range(NUM_ITR):
         opt.zero_grad()
 
         loss = loss_fcn(param[0], param[1], param[2], param[3]) # compute loss
 
         loss.backward()
         opt.step()
-        scheduler.step(loss) # activate scheduler
 
-        loss = loss.item()
-        loss_list.append(loss)
-        time_list.append(time.time() - start_time)
-
-        if itr == NUM_ITR - 1 or loss < 1e-6:
-            # print(f"iter: {str(itr).zfill(len(str(NUM_ITR)))}, " +
-            #     f"loss: {loss:.8f}, " +
-            #     f"lr: {scheduler.get_last_lr()[0]:.2E}, avg_time: {np.mean(time_list):.4f}s")
-            break
+        scheduler.step(loss.item())
 
     alpha_angle, omega, theta, phi = param.detach().numpy()
     alpha = np.exp(1j * alpha_angle) * rz(omega)[0, 0].item()

@@ -44,7 +44,7 @@ class Laurent(object):
     """
     def __init__(self, coef: np.ndarray) -> None:
         if not isinstance(coef, np.ndarray):
-            coef = np.array(coef)
+            coef = np.asarray(coef)
         coef = coef.astype('complex128')
         coef = remove_abs_error(np.squeeze(coef) if len(coef.shape) > 1 else coef)
         assert len(coef.shape) == 1 and coef.shape[0] % 2 == 1
@@ -59,7 +59,7 @@ class Laurent(object):
         # rearrange the coef in order p_0, ..., p_L, p_{-L}, ..., p_{-1},
         #   then we can call ``poly_coef[i]`` to retrieve p_i, this order is for internal use only
         coef = coef.tolist()
-        poly_coef = np.array(coef[L:] + coef[:L]).astype('complex128')
+        poly_coef = np.asarray(coef[L:] + coef[:L]).astype('complex128')
         
         self.deg = L
         self.__coef = poly_coef
@@ -72,7 +72,7 @@ class Laurent(object):
 
         deg = self.deg
         if isinstance(X, np.ndarray):
-           coef = np.array(self.__coef)
+           coef = np.asarray(self.__coef)
            return np.sum([coef[i] * np.exp(1j * i * X / 2) for i in range(-deg, deg + 1)], axis=0)
         return sum(self.__coef[i] * np.exp(1j * i * X / 2) for i in range(-self.deg, self.deg + 1))
     
@@ -99,7 +99,7 @@ class Laurent(object):
         # create the corresponding (common) polynomial with degree 2L
         P = Polynomial(self.coef)
         roots = P.roots().tolist()
-        return np.array(sorted(roots, key=lambda x: np.abs(x)))
+        return np.asarray(sorted(roots, key=lambda x: np.abs(x)))
     
     @property
     def norm(self) -> float:
@@ -176,7 +176,7 @@ class Laurent(object):
         elif isinstance(other, Laurent):
             # retrieve the coef of Q
             q_coef = other.coef.tolist()
-            q_coef = np.array(q_coef[other.deg:] + q_coef[:other.deg]).astype('complex128')
+            q_coef = np.asarray(q_coef[other.deg:] + q_coef[:other.deg]).astype('complex128')
 
             L = self.deg + other.deg # deg of new poly
             new_coef = np.zeros([2 * L + 1]).astype('complex128')
@@ -297,7 +297,7 @@ def ascending_coef(coef: np.ndarray) -> np.ndarray:
     """
     L = int((len(coef) - 1) / 2)
     coef = coef.tolist()
-    return np.array(coef[L + 1:] + coef[:L + 1])
+    return np.asarray(coef[L + 1:] + coef[:L + 1])
 
 
 def remove_abs_error(data: np.ndarray, tol: Optional[float] = None) -> np.ndarray:
@@ -369,7 +369,7 @@ def _search_inv_conj_pair(pool_roots: np.ndarray, precision: float = 1e-4) -> Tu
     if excess_roots:
         warnings.warn(
             f"{len(excess_roots)} excess roots found with precision {precision}", UserWarning)
-        excess_Q_roots, excess_inv_conj_roots = _search_inv_conj_pair(np.array(excess_roots).flatten(), precision * 5)
+        excess_Q_roots, excess_inv_conj_roots = _search_inv_conj_pair(np.asarray(excess_roots).flatten(), precision * 5)
         Q_roots.extend(excess_Q_roots)
         inv_conj_roots.extend(excess_inv_conj_roots)
     return Q_roots, inv_conj_roots
@@ -407,7 +407,7 @@ def sqrt_generation(A: Laurent, disp: float = 0, precision: float = 1e-4) -> Lau
         for i in range(len(excess_roots) // 2):
             Q_roots.append(excess_roots[2 * i])
             inv_roots.append(excess_roots[2 * i + 1])            
-    inv_roots = np.array(inv_roots)
+    inv_roots = np.asarray(inv_roots)
 
     # construct Q
     leading_coef = A.coef[-1]
@@ -535,7 +535,7 @@ def laurent_generator(f: Callable[[np.ndarray], np.ndarray], deg: int) -> Lauren
     assert deg >= 0 and deg % 2 == 0, \
         f"Degree must be a non-negative even number, got {deg}."
     coef = func_fft(f, deg // 2)
-    coef = np.array([coef[i // 2] if i % 2 == 0 else 0 for i in range(deg * 2 + 1)])
+    coef = np.asarray([coef[i // 2] if i % 2 == 0 else 0 for i in range(deg * 2 + 1)])
     return Laurent(coef)
 
 

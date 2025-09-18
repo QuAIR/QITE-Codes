@@ -46,7 +46,7 @@ It is recommended to run these files on a server with high performance. Below ar
 
 **Package Versions**:
 
-- quairkit: 0.4.0
+- quairkit: 0.4.3
 - torch: 2.6.0+cu124
 - torch cuda: 12.4
 - numpy: 1.26.4
@@ -58,6 +58,6 @@ It is recommended to run these files on a server with high performance. Below ar
 - Python version: 3.10.16
 - OS: Linux, Ubuntu (version: #63-Ubuntu SMP PREEMPT_DYNAMIC Tue Apr 15 19:04:15 UTC 2025)
 - CPU: AMD EPYC 9654 96-Core Processor
-- GPU: (0) NVIDIA GeForce RTX 4090
+- GPU: NVIDIA GeForce RTX 4090
 
 These settings ensure compatibility and optimal performance when running the codes.

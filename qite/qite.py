@@ -157,8 +157,8 @@ def get_qpp_angle(
             )
             qkit.set_device("cpu")
 
-        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_theta.npy", list_theta)
-        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_phi.npy", list_phi)
+        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_theta.npy", np.array(list_theta).astype(np.float64))
+        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_phi.npy", np.array(list_phi).astype(np.float64))
         return list_theta, list_phi
 
 

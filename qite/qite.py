@@ -31,6 +31,7 @@ if module_path not in sys.path:
 from qsp import *
 
 from .sampling import algorithm4
+from .utils import set_gpu
 
 __all__ = ["E_eval", "get_qpp_angle"]
 
@@ -74,7 +75,7 @@ def target_func_Q(
 
 
 def get_qpp_angle(
-    guess_lambda: float, tau: int, deg: int, learn: bool = False
+    guess_lambda: float, tau: int, deg: int, learn: bool = False, alpha: float = 0.85
 ) -> Union[Laurent, Tuple[List[float], List[float]]]:
     r"""Generate the QPP angles for the given function.
 
@@ -85,27 +86,23 @@ def get_qpp_angle(
 
     """
     lambda_name = round(guess_lambda, 8)
+    tau = round(tau, 8)
+    file = f"data/lam{lambda_name}_tau{tau}_deg{deg}.npz"
+    
     try:
-        file = f"data/lam{lambda_name}_tau{tau}_deg{deg}"
-        str_theta = f"{file}_theta.npy"
-        str_phi = f"{file}_phi.npy"
-
-        list_theta = np.load(file=str_theta)
-        list_phi = np.load(file=str_phi)
-        return list_theta, list_phi
+        data = np.load(file)
+        list_theta = data['theta']
+        list_phi = data['phi']
+        return list_theta.tolist(), list_phi.tolist()
 
     except Exception:
         start, end = -1, -1 + np.pi
 
         def f(x):
-            alpha = 0.85
             return np.where(
                 x <= guess_lambda,
                 np.exp(tau * (x - guess_lambda)) * alpha,
-                -1
-                * np.exp(tau * alpha * (-x + guess_lambda) / (1 - alpha))
-                * (1 - alpha)
-                + 1,
+                -1 * np.exp(tau * alpha * (-x + guess_lambda) / (1 - alpha)) * (1 - alpha) + 1,
             )
 
         left_y, right_y = f(start), f(end)
@@ -139,7 +136,7 @@ def get_qpp_angle(
         list_theta, list_phi = qpp_angle_approximator(P, Q)
 
         if learn:
-            qkit.set_device("cuda" if torch.cuda.is_available() else "cpu")
+            set_gpu()
 
             def weight_func(x):
                 return 1 + np.exp(-np.log(tau) * np.abs(guess_lambda - x))
@@ -157,8 +154,7 @@ def get_qpp_angle(
             )
             qkit.set_device("cpu")
 
-        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_theta.npy", np.array(list_theta).astype(np.float64))
-        np.save(f"data/lam{lambda_name}_tau{tau}_deg{deg}_phi.npy", np.array(list_phi).astype(np.float64))
+        np.savez(file, theta=np.array(list_theta).astype(np.float64), phi=np.array(list_phi).astype(np.float64))
         return list_theta, list_phi
 
 
@@ -181,17 +177,7 @@ def E_eval(
         phi: initial state.
 
     """
-    lambda_name = round(guess_lambda, 8)
-    try:
-        file = f"data/lam{lambda_name}_tau{tau}_deg{deg}"
-        str_theta = f"{file}_theta.npy"
-        str_phi = f"{file}_phi.npy"
-
-        list_theta = np.load(file=str_theta)
-        list_phi = np.load(file=str_phi)
-
-    except Exception:
-        list_theta, list_phi = get_qpp_angle(guess_lambda, tau, deg, learn=learn)
+    list_theta, list_phi = get_qpp_angle(guess_lambda, tau, deg, learn=learn)
 
     num_qubits = H.n_qubits
     H_matrix = H.matrix

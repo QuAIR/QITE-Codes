@@ -3,14 +3,21 @@
 Source code for the paper [Quantum Imaginary-Time Evolution with Polynomial Resources in Time](http://arxiv.org/abs/2507.00908).
 
 Preparing the normalized imaginary-time evolution state (ITE state) is a useful tool for problems in quantum many-body system, while current methods that suffer from exponentially growing classical resources or deteriorating success probabilities in long evolution time.
-This repository gives the simulation code for a quantum algorithm that introduces a normalization scheme that ensures state preparation for large imaginary-time durations with stable success probability, and a quantum algorithm using the idea of ITE to solve ground-state-related problems.
+This repository gives the simulation code for a quantum algorithm that introduces a normalization scheme that ensures state preparation for large imaginary-time durations with stable success probability, and a quantum algorithm using the idea of ITE to solve ground-state-related problems：
+1. Prepare ITE states for large imaginary-time durations with stable success probability
+2. Apply ITE to ground-state-related problems with reduced circuit depth
+3. Simulate open quantum systems (Lindbladian dynamics) with improved resource scaling
 
-| Visualization / Protocols in the paper      | Location in this repository                                           | Extra hardware requirement |
-|--------------------|------------------------------------------------------------------|:-----------------:|
-| [Tutorial for the ITE circuit](./code/tutorial.ipynb)           | `tutorial.ipynb`                              | \ |
-| [Figure 1](./code/normalization.ipynb)           | `./code/normalization.ipynb`                              | \ |
-| [Figure 2(a)](./code/long%20evolution.ipynb)           | `./code/long evolution.ipynb`                              | \ |
-| [Figure 2(b, c)](./code/ground%20state.ipynb)           | `./code/ground state.ipynb`                              | \ |
+## Code-Paper Correspondence
+
+| Figure/Protocol in Paper | Location in Repository | Hardware Requirements |
+|--------------------------|------------------------|:---------------------:|
+| [Tutorial for ITE circuit](./code/tutorial.ipynb) | `tutorial.ipynb` | \ |
+| [Figure 1](./code/normalization.ipynb) | `./code/normalization.ipynb` | \ |
+| [Figure 2(a)](./code/long%20evolution.ipynb) | `./code/long evolution.ipynb` | \ |
+| [Figure 2(b,c)](./code/ground%20state.ipynb) | `./code/ground state.ipynb` | \ |
+| [Figure 3(a,b)](./code/Lindbladian%20evaluation.ipynb) | `./code/Lindbladian evaluation.ipynb` | \ |
+| [Figure 3(c)](./code/Lindbladian%20tradeoff.ipynb) | `./code/Lindbladian tradeoff.ipynb` | \ |
 
 ## Repository Structure
 
@@ -24,10 +31,10 @@ QITE-CODES/
 
 ## How to Run These Files?
 
-We recommend running these files by creating a virtual environment using `conda` and install Jupyter Notebook. We recommend using Python `3.10` for compatibility.
+We recommend running these files by creating a virtual environment using `conda` and install Jupyter Notebook. We recommend using Python `3.14` for compatibility.
 
 ```bash
-conda create -n qite python=3.10
+conda create -n qite python=3.14
 conda activate qite
 conda install jupyter notebook
 ```
@@ -47,17 +54,17 @@ It is recommended to run these files on a server with high performance. Below ar
 **Package Versions**:
 
 - quairkit: 0.4.3
-- torch: 2.6.0+cu124
-- torch cuda: 12.4
-- numpy: 1.26.4
-- scipy: 1.15.2
-- matplotlib: 3.10.1
+- torch: 2.9.1+cu128
+- torch cuda: 12.8
+- numpy: 2.3.5
+- scipy: 1.16.3
+- matplotlib: 3.10.7
 
 **System Information**:
 
-- Python version: 3.10.16
-- OS: Linux, Ubuntu (version: #63-Ubuntu SMP PREEMPT_DYNAMIC Tue Apr 15 19:04:15 UTC 2025)
-- CPU: AMD EPYC 9654 96-Core Processor
-- GPU: NVIDIA GeForce RTX 4090
+- Python version: 3.14.0
+- OS: Linux, Ubuntu (version: #88-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 11 09:28:41 UTC 2025)
+- CPU: AMD EPYC 9554 64-Core Processor
+- GPU: NVIDIA GeForce RTX 3090
 
 These settings ensure compatibility and optimal performance when running the codes.

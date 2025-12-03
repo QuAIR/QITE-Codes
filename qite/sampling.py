@@ -128,7 +128,6 @@ def sample_x(
 
     prob_distribution = prob_distribution.to(device=device)
     sample_result = safe_prob_sample(prob_distribution, shots=shots)
-    # print('sampling time', time.time() - start_time)
     qkit.set_device("cpu")
 
     sum_x = 0
@@ -162,9 +161,7 @@ def algorithm4(
     output_state: State, hamiltonian: Hamiltonian, num_qubits: int, tau: float, B: float
 ):
     pauli_coef = hamiltonian.coefficients
-    
-    # Lambda = np.abs(pauli_coef).max()
-    # total_shots = min(int(1e9), int(2 * max(Lambda ** 2, 1) * tau ** 3 * (B ** (-2))))
+
     total_shots = int(1e9)
 
     pauli_weight = np.abs(pauli_coef) / np.abs(pauli_coef).sum()

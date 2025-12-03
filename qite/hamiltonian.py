@@ -74,6 +74,21 @@ def afm_heisenberg(n: int) -> Hamiltonian:
     return Hamiltonian(pauli_terms)
 
 
+def tf_ising(n: int, J: float, h: float) -> Hamiltonian:
+    r"""Prepare a transverse field Ising model hamiltonian for a n-qubit homogeneous chain
+    
+    Args:
+        n: number of qubits
+        J: interaction strength
+        h: transverse field strength
+    
+    """
+    pauli_terms = []
+    pauli_terms.extend([J, f"Z{i}, Z{i + 1}"] for i in range(n - 1))
+    pauli_terms.extend([h, f"X{i}"] for i in range(n))
+    return Hamiltonian(pauli_terms)
+
+
 def normalize(H: Hamiltonian, factor: float) -> Hamiltonian:
     r"""Normalize a Hamiltonian which eigenvalues will be divided by factor
 

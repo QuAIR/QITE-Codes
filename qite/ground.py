@@ -33,18 +33,12 @@ from qsp import *
 
 from .qite import E_eval
 from .sampling import confidence_interval
+from .utils import even_floor
 
-__all__ = ["even_floor", "algorithm1", "algorithm5"]
-
-
-def even_floor(x):
-    num = math.floor(x)
-    if num % 2 != 0:  # If the number is odd, add 1 to make it even
-        num += 1
-    return num
+__all__ = ["algorithm1", "algorithm6"]
 
 
-def algorithm5(
+def algorithm6(
     tau, H: Hamiltonian, phi: State, deg: int, B: float, learn: bool = False
 ) -> np.ndarray:
     r"""
@@ -157,7 +151,7 @@ def algorithm1(
     list_error = []
     list_resource = [0]
 
-    while delta >= 1 / (2 * tau) or criteria(list_E_tau, list_error):
+    while delta >= 1 / (2 * tau) or (not criteria(list_E_tau, list_error)):
         list_tau.append(tau)
         delta = (lambda_r - lambda_l) / 3
         deg = max(

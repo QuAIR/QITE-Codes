@@ -31,10 +31,10 @@ QITE-CODES/
 
 ## How to Run These Files?
 
-We recommend running these files by creating a virtual environment using `conda` and install Jupyter Notebook. We recommend using Python `3.14` for compatibility.
+We recommend running these files by creating a virtual environment using `conda` and install Jupyter Notebook. We recommend using Python `3.10` for compatibility.
 
 ```bash
-conda create -n qite python=3.14
+conda create -n qite python=3.10
 conda activate qite
 conda install jupyter notebook
 ```
@@ -62,7 +62,7 @@ It is recommended to run these files on a server with high performance. Below ar
 
 **System Information**:
 
-- Python version: 3.14.0
+- Python version: 3.10.0
 - OS: Linux, Ubuntu (version: #88-Ubuntu SMP PREEMPT_DYNAMIC Sat Oct 11 09:28:41 UTC 2025)
 - CPU: AMD EPYC 9554 64-Core Processor
 - GPU: NVIDIA GeForce RTX 3090
